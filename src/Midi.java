@@ -16,15 +16,15 @@ public class Midi {
     public Midi() {
 
 
-        for (int i = 0; i < midiDeviceInfos.length; i++) {
-            try {
-                System.out.print(MidiSystem.getMidiDevice(midiDeviceInfos[i]).getDeviceInfo().getName());
-                System.out.print(",");
-            } catch (Exception e) {
-                System.out.println("Could not get midi devices");
-            }
-        }
-        System.out.println();
+//        for (int i = 0; i < midiDeviceInfos.length; i++) {
+//            try {
+//                System.out.print(MidiSystem.getMidiDevice(midiDeviceInfos[i]).getDeviceInfo().getName());
+//                System.out.print(",");
+//            } catch (Exception e) {
+//                System.out.println("Could not get midi devices");
+//            }
+//        }
+//        System.out.println();
 
         value = new SimpleIntegerProperty(0);
     }
@@ -48,7 +48,7 @@ public class Midi {
         return value.get();
     }
 
-    public void openMidiDevice(String deviceName) {
+    public boolean openMidiDevice(String deviceName) {
         for (MidiDevice.Info i : midiDeviceInfos) {
             try {
                 if (deviceName.equals(MidiSystem.getMidiDevice(i).getDeviceInfo().getName())) {
@@ -57,11 +57,14 @@ public class Midi {
                     Transmitter transmitter = midiDevice.getTransmitter();
                     transmitter.setReceiver(new MidiInputReceiver());
                     midiDevice.open();
-                    return;
+                    return true;
                 }
-            } catch (Exception e) {}
-
+            } catch (Exception e) {
+                return false;
+            }
         }
+        System.out.println("No Default Midi Devices");
+        return false;
     }
 
 

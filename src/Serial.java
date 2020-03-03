@@ -11,6 +11,8 @@ public class Serial {
 
     private long handle;
 
+    private String[] barredSerial;
+
     public Serial() {
 
         try {
@@ -46,10 +48,15 @@ public class Serial {
         try {
             String[] serialPorts = serialComManager.listAvailableComPorts();
             for (int i = 0; i < serialPorts.length; i++) {
-             if (serialPorts[i].startsWith("/dev/cu")) {
-                 sp.add(serialPorts[i]);
-             }
+                if (serialPorts[i].startsWith("/dev/cu")) {
+                    sp.add(serialPorts[i]);
+                }
             }
+
+            for (int i = 0; i < barredSerial.length; i++) {
+                sp.remove(barredSerial[i]);
+            }
+
         } catch (Exception e) {};
         return sp;
     }
@@ -58,7 +65,7 @@ public class Serial {
         new Thread(new SendWirelessData(note)).start();
     }
 
-    public void connectToPort(String portName) {
+    public boolean connectToPort(String portName) {
 
         disconnectPort();
         try {
@@ -66,11 +73,12 @@ public class Serial {
             serialComManager.configureComPortData(handle, SerialComManager.DATABITS.DB_8, SerialComManager.STOPBITS.SB_1, SerialComManager.PARITY.P_NONE, SerialComManager.BAUDRATE.B57600, 0);
             serialComManager.configureComPortControl(handle, SerialComManager.FLOWCONTROL.NONE, 'x', 'x', false, false);
             System.out.println("Connected to port");
-
+            return true;
 //            serialComManager.readString(handle);
 
         } catch (Exception e) {
             System.out.println("cant connect to serial");
+            return false;
         }
     }
 
@@ -95,6 +103,10 @@ public class Serial {
             } catch (Exception E) {
                 return "Not Connected";
             }
+    }
+
+    public void barredSerial(String l) {
+        barredSerial = l.split(",");
     }
 
 

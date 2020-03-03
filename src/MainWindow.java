@@ -25,9 +25,13 @@ import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 
 /**
  * Created by edisongrauman on 11/15/19.
@@ -40,6 +44,7 @@ public class MainWindow extends Parent {
     private int noteAmount = 128;
     private Serial serial;
     private Midi midi;
+    private Config config;
     private NoteContainer noteContainer;
     private boolean refreshing = false;
 
@@ -390,10 +395,16 @@ public class MainWindow extends Parent {
 
         midi.valueProperty().addListener(event -> triggerNote(midi.getValue()));
 
+        config = new Config("/Users/edisongrauman/IdeaProjects/LedCircle/Resources/config.properties");
+        config.loadConfig();
+        midi.openMidiDevice(config.loadProperty("Midi"));
+        serial.connectToPort(config.loadProperty("Serial"));
+        serial.barredSerial(config.loadProperty("BarredSerial"));
+
+
+
+
         refreshDisplay();
-
-
-
 
     }
 
@@ -909,7 +920,11 @@ public class MainWindow extends Parent {
         for (int i = 0; i < midi.getMidiNames().size(); i++) {
             int ti = i;
             midiItems.add(new MenuItem(midi.getMidiNames().get(ti)));
-            midiItems.get(i).setOnAction(event -> midi.openMidiDevice(midiItems.get(ti).getText()));
+            midiItems.get(i).setOnAction(event -> {
+                if (midi.openMidiDevice(midiItems.get(ti).getText())) {
+                    config.setProperty("Midi", midiItems.get(ti).getText());
+                }
+            });
         }
         midiMenu.getItems().addAll(midiItems);
 
@@ -922,7 +937,10 @@ public class MainWindow extends Parent {
             int ti = i;
             serialPortItems.add(new MenuItem(serial.getSerialPortNames().get(ti)));
             serialPortItems.get(i).setOnAction(event -> {
-                serial.connectToPort(serialPortItems.get(ti).getText());
+                if (serial.connectToPort(serialPortItems.get(ti).getText())) {
+                    config.setProperty("Serial", serialPortItems.get(ti).getText());
+
+                };
             });
         }
 
