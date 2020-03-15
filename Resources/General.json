@@ -1,0 +1,26 @@
+[
+  [
+    "Strobe",
+    [
+      "Radio",
+      "On/Off",
+      "On/Off",
+      "Decay",
+      "Bounce"
+    ],
+    [
+      "Slider",
+      "Speed",
+      10,
+      0,
+      100
+    ],
+    [
+      "Slider",
+      "Decay",
+      0,
+      0,
+      100
+    ]
+  ]
+]

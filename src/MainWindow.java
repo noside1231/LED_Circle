@@ -4,11 +4,12 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.SubScene;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -24,14 +25,11 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.json.JSONArray;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Properties;
 
 /**
  * Created by edisongrauman on 11/15/19.
@@ -53,7 +51,7 @@ public class MainWindow extends Parent {
 
     //Window Setup
     private Scene mainSceen;
-    private BorderPane exteriorPane;
+    private VBox exteriorPane;
     private VBox mainWindowContainer;
 
     private ScrollPane presetScrollPane;
@@ -69,6 +67,7 @@ public class MainWindow extends Parent {
     private MenuItem saveItem;
     private MenuItem saveAsItem;
     private CheckMenuItem autoSaveItem;
+    private MenuItem fixtureSettingsItem;
 //    private MenuButton serialButton;
     private MenuItem serialStatusItem;
     private ArrayList<MenuItem> serialPortItems;
@@ -80,12 +79,16 @@ public class MainWindow extends Parent {
     private MenuButton viewButton;
     private MenuItem gridViewButton;
     private MenuItem editViewButton;
+    private MenuItem newViewButton;
     private Label previewTextLabel;
 
     private MenuButton peripheralsButton;
     private Menu midiMenu;
     private Menu serialMenu;
 
+    //Fixture Settings
+    FixturePreferencesWindow fixturePreferencesWindow;
+    FixtureGeneralWindow fixtureGeneralWindow;
 
     //Sequencer
     private Sequencer sequencer;
@@ -114,6 +117,12 @@ public class MainWindow extends Parent {
     private NoteGrid noteGrid;
     private StackPane[][] noteGridRects;
 
+    //New Window Containers
+    private HBox newContentContainer;
+    private VBox mainNoteContainer;
+    private HBox fixtureContainer;
+    private ScrollPane fixtureScrollPane;
+
 
     //Note Color
     private VBox rgbContainer;
@@ -139,6 +148,7 @@ public class MainWindow extends Parent {
     private NumberTextFieldDecimal hold;
     private NumberTextFieldDecimal fadeOut;
     private CheckBox alwaysOn;
+
 
     //Strobe
     private CheckBox strobeEnabled;
@@ -168,7 +178,9 @@ public class MainWindow extends Parent {
     private VBox pinWheelParameters;
     private VBox pinWheelContainer;
 
-    private Preset testPreset;
+//    private Preset testPreset;
+
+    private FixturePresetWindow fixturePresetWindow;
 
     //Angle
     private CheckBox angleEnabled;
@@ -215,10 +227,11 @@ public class MainWindow extends Parent {
     private Rectangle[] noteRects;
     private FadeTransition[] noteRectTransitions;
 
+    CirclePresetParameters cp;
 
 
     public MainWindow(Stage mainWindow) {
-
+        cp = new CirclePresetParameters();
 
         FileManager fileManager = new FileManager();
         noteContainer = new NoteContainer(noteAmount);
@@ -231,9 +244,9 @@ public class MainWindow extends Parent {
         });
         autosaveTimeline.getKeyFrames().setAll(keyFrame);
 
-        exteriorPane = new BorderPane();
-        exteriorPane.setMaxWidth(screenWidth);
-        exteriorPane.setMaxHeight(screenHeight);
+        exteriorPane = new VBox();
+        VBox.setVgrow(exteriorPane,Priority.ALWAYS);
+
         mainSceen = new Scene(exteriorPane, screenWidth, screenHeight);
 
         mainWindow.setScene(mainSceen);
@@ -297,8 +310,13 @@ public class MainWindow extends Parent {
             }
         });
 
+        fixtureSettingsItem = new MenuItem("Fixture Settings");
+        fixtureSettingsItem.setOnAction(event -> {
+            fixturePreferencesWindow.showFixturePreferences();
+        });
+
         fileButton = new MenuButton("File");
-        fileButton.getItems().addAll(newItem, openItem, saveItem, saveAsItem, autoSaveItem);
+        fileButton.getItems().addAll(newItem, openItem, saveItem, saveAsItem, autoSaveItem,fixtureSettingsItem);
 
         copyToButton = new MenuItem("Copy To...");
         copyToButton.setOnAction(event -> {
@@ -320,8 +338,12 @@ public class MainWindow extends Parent {
         editViewButton.setAccelerator(new KeyCodeCombination(KeyCode.E));
         editViewButton.setOnAction(event -> setWindow("Edit"));
 
+        newViewButton = new MenuItem("New");
+        newViewButton.setAccelerator(new KeyCodeCombination(KeyCode.N));
+        newViewButton.setOnAction(event -> setWindow("New"));
+
         viewButton = new MenuButton("View");
-        viewButton.getItems().addAll(gridViewButton,editViewButton);
+        viewButton.getItems().addAll(gridViewButton,editViewButton, newViewButton);
 
 
         serialStatusItem = new MenuItem("Not Connected");
@@ -379,6 +401,9 @@ public class MainWindow extends Parent {
         initNoteGrid();
         initializeKeyMap();
 
+        //new window
+        initNewContainer();
+
         VBox noteInfoContainer = new VBox(noteInfo);
 //        noteInfoContainer.setAlignment();
         noteContentContainer = new HBox(noteInfoContainer, presetScrollPane);
@@ -386,8 +411,8 @@ public class MainWindow extends Parent {
 
         //happens last
         mainWindowContainer.getChildren().addAll(noteViewBox ,noteContentContainer);
-        exteriorPane.setTop(toolbar);
-        exteriorPane.setCenter(mainWindowContainer);
+        VBox.setVgrow(mainWindowContainer, Priority.ALWAYS);
+        exteriorPane.getChildren().addAll(toolbar,mainWindowContainer);
 
         //Back End Stuff
         serial = new Serial();
@@ -401,7 +426,7 @@ public class MainWindow extends Parent {
         serial.connectToPort(config.loadProperty("Serial"));
         serial.barredSerial(config.loadProperty("BarredSerial"));
 
-
+        fixturePreferencesWindow = new FixturePreferencesWindow();
 
 
         refreshDisplay();
@@ -546,11 +571,11 @@ public class MainWindow extends Parent {
         pinWheelContainer = new VBox(pinWheelEnabled,pinWheelParameters);
         pinWheelContainer.setSpacing(presetParamterSpacing);
 
-        testPreset = new Preset("Test");
-        testPreset.addSliderTextField("Test Field", 0,100);
-        testPreset.addRadioGroup("1", "two", "3");
-        testPreset.addCheckBox("One");
-        testPreset.addCheckBox("TWOO");
+//        testPreset = new Preset("Test");
+//        testPreset.addSliderTextField("Test Field", 0,100);
+//        testPreset.addRadioGroup("1", "two", "3");
+//        testPreset.addCheckBox("One");
+//        testPreset.addCheckBox("TWOO");
 
         angleEnabled = new CheckBox("Angle");
         angleEnabled.setMinWidth(presetCheckBoxWidth);
@@ -729,6 +754,82 @@ public class MainWindow extends Parent {
 
     }
 
+    public void initNewContainer() {
+
+        NumberTextFieldDecimal fadeIn = new NumberTextFieldDecimal(0,100,"FadeIn");
+        NumberTextFieldDecimal hold = new NumberTextFieldDecimal(0,100,"Hold");
+        NumberTextFieldDecimal fadeOut = new NumberTextFieldDecimal(0,100,"FadeOut");
+        TextField noteName = new TextField("Note Name");
+
+        HBox timingBox = new HBox(fadeIn,hold,fadeOut,noteName);
+
+        ColorRainbowPresetContainer colorRainbowPresetContainer = new ColorRainbowPresetContainer();
+        colorRainbowPresetContainer.setVisible(false);
+
+
+        ObservableList<String> fixturePresets = FXCollections.observableArrayList("Color/Rainbow", "Strobe");
+        ComboBox<String> masterPresetBox = new ComboBox<>(fixturePresets);
+
+        ListView<String> testview = new ListView<>(fixturePresets);
+        masterPresetBox.setOnAction(event -> {
+            if (masterPresetBox.getValue().equals(fixturePresets.get(0))) {
+                colorRainbowPresetContainer.setVisible(true);
+
+                masterPresetBox.getItems().remove(masterPresetBox.getValue());
+                masterPresetBox.setValue("Select Preset to Add");
+            }
+        });
+
+
+
+
+
+//        mainNoteContainer = new VBox(timingBox,colorRainbowPresetContainer,testview,masterPresetBox);
+//        mainNoteContainer.setMinWidth(500);
+
+        //Left Column with main information(timing, common presets etc.)
+        fixtureGeneralWindow = new FixtureGeneralWindow();
+        fixtureGeneralWindow.getValue().addListener(event -> {
+            try {
+                if (fixtureGeneralWindow.getValue().get().get(0).equals("Trigger")) {
+                    triggerNote(noteContainer.getCurrentNote().getNoteNumber());
+                } else if (fixtureGeneralWindow.getValue().get().get(0).equals("Increment")) {
+                    noteRects[noteContainer.getCurrentNote().getNoteNumber()].setFill(Color.WHITE);
+                    noteContainer.incrementCurrentNote();
+                    refreshDisplay();
+                } else if (fixtureGeneralWindow.getValue().get().get(0).equals("Decrement")) {
+                    noteRects[noteContainer.getCurrentNote().getNoteNumber()].setFill(Color.WHITE);
+                    noteContainer.decrementCurrentNote();
+                    refreshDisplay();
+                } else {
+                    System.out.println("Update: " + fixtureGeneralWindow.getValue().get());
+                    noteContainer.updateCurrentNote(fixtureGeneralWindow.getValue().get());
+                }
+            } catch (Exception e) {}
+        });
+
+        fixturePresetWindow = new FixturePresetWindow("Fixture 1");
+        fixturePresetWindow.getValue().addListener(event -> {
+            System.out.println("Update: " + fixturePresetWindow.getValue().get());
+            noteContainer.updateCurrentNote(fixturePresetWindow.getValue().get());
+        });
+
+
+        FixturePresetWindow f2 = new FixturePresetWindow("Fixture 2");
+        FixturePresetWindow f3 = new FixturePresetWindow("Fixture 2");
+
+        fixtureContainer = new HBox(fixturePresetWindow,f2,f3);
+
+        fixtureScrollPane = new ScrollPane(fixtureContainer);
+
+
+
+        //Main Container that will show
+        newContentContainer = new HBox(fixtureGeneralWindow,fixtureScrollPane);
+        newContentContainer.setMinHeight(400);
+
+    }
+
     public void noteRectClicked(int i) {
         triggerNote(i);
         noteRects[noteContainer.getCurrentNote().getNoteNumber()].setFill(Color.WHITE);
@@ -883,6 +984,18 @@ public class MainWindow extends Parent {
         noteRects[currentNote.getNoteNumber()].setFill(Color.CYAN);
 
         refreshing = false;
+
+
+
+
+        //New Notes
+        try {
+            fixturePresetWindow.refreshPresetWindow(noteContainer.getCurrentNewNote().getJSONObject("F1"));
+            fixtureGeneralWindow.refresh(noteContainer.getCurrentNewNote().getJSONObject("GeneralData"));
+
+
+        } catch (Exception e) {}
+
     }
 
 //    private void refreshSerial() {
@@ -1034,7 +1147,7 @@ public class MainWindow extends Parent {
     }
 
     private void updateBackEnd() {
-        if (!refreshing) { //dont update back end if setting notes
+        if (!refreshing) { //don't update back end if setting notes
             System.out.println("updating");
             Note n = new Note(-1);
             n.setNoteName(noteName.getText());
@@ -1205,6 +1318,9 @@ public class MainWindow extends Parent {
         } else if (view.equals("Edit")) {
             mainWindowContainer.getChildren().clear();
             mainWindowContainer.getChildren().addAll(noteViewBox ,noteContentContainer);
+        } else if (view.equals("New")) {
+            mainWindowContainer.getChildren().clear();
+            mainWindowContainer.getChildren().addAll(noteViewBox ,newContentContainer);
         }
     }
 

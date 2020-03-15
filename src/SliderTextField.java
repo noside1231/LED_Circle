@@ -41,6 +41,9 @@ public class SliderTextField extends HBox{
        slider.setValue(sliderValue);
     }
 
+    public String getName() {
+        return label.getText();
+    }
 
 
 }

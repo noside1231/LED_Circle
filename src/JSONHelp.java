@@ -1,6 +1,7 @@
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.*;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 
@@ -72,5 +73,27 @@ public class JSONHelp {
         }
 
     }
+
+    public static JSONArray loadFromFile(String path) {
+        JSONArray a = new JSONArray();
+        try {
+            File file = new File(path);
+            InputStream is = new FileInputStream(file);
+            BufferedReader buf = new BufferedReader(new InputStreamReader(is));
+            String line = buf.readLine();
+            StringBuilder sb = new StringBuilder();
+            while (line != null) {
+                sb.append(line).append("\n");
+                line = buf.readLine();
+            }
+            String fileString = sb.toString();
+
+            return new JSONArray(fileString);
+
+        } catch (Exception e) {
+        }
+        return null;
+    }
+
 
 }

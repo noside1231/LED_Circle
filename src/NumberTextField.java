@@ -63,6 +63,10 @@ public class NumberTextField extends HBox {
         return value.get();
     }
 
+    public void setValue(int i) {
+        value.setValue(i);
+    }
+
 
 
 

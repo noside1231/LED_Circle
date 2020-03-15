@@ -15,6 +15,8 @@ public class RadioGroup extends HBox {
 
     private SimpleStringProperty value;
 
+    private String name = "";
+
     public RadioGroup(String ...radioNames) {
 
         tg = new ToggleGroup();
@@ -31,11 +33,27 @@ public class RadioGroup extends HBox {
         tg.selectedToggleProperty().addListener(event -> {
             value.setValue(((RadioButton)tg.getSelectedToggle()).getText());
         });
-
-
-
         getChildren().addAll(radios);
+    }
 
+    public RadioGroup(String name, ArrayList<String> radioNames) {
+        this.name = name;
+
+        tg = new ToggleGroup();
+
+        radios = new ArrayList<>();
+
+        for (int i = 0; i < radioNames.size(); i++) {
+            radios.add(new RadioButton(radioNames.get(i)));
+            radios.get(i).setToggleGroup(tg);
+        }
+
+        value = new SimpleStringProperty(radioNames.get(0));
+
+        tg.selectedToggleProperty().addListener(event -> {
+            value.setValue(((RadioButton)tg.getSelectedToggle()).getText());
+        });
+        getChildren().addAll(radios);
     }
 
     public SimpleStringProperty valueProperty() {
@@ -56,6 +74,10 @@ public class RadioGroup extends HBox {
             }
         }
 
+    }
+
+    public String getName() {
+        return name;
     }
 
 

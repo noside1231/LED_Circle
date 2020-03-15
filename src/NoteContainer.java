@@ -1,4 +1,5 @@
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Created by edisongrauman on 11/15/19.
@@ -6,6 +7,7 @@ import org.json.JSONArray;
 public class NoteContainer {
 
     private Note[] notes;
+    private NewNote[] newNotes;
     private int currentNote = 5;
 
     public NoteContainer(int noteAmount) {
@@ -13,6 +15,11 @@ public class NoteContainer {
         notes = new Note[noteAmount];
         for (int i = 0 ;i < noteAmount; i++) {
             notes[i] = new Note(i);
+        }
+
+        newNotes = new NewNote[noteAmount];
+        for (int i  = 0; i < noteAmount; i++) {
+            newNotes[i] = new NewNote(i);
         }
 
     }
@@ -61,5 +68,14 @@ public class NoteContainer {
                 notes[i].loadNote(arr.getJSONObject(i));
             }
         } catch (Exception e) {}
+    }
+
+    //New Note
+    public void updateCurrentNote(JSONArray o) {
+        newNotes[currentNote].updateNote(o);
+    }
+
+    public JSONObject getCurrentNewNote() {
+        return newNotes[currentNote].getData();
     }
 }

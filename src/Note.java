@@ -73,8 +73,6 @@ public class Note {
     private boolean bpmSettingsEnabled;
     private byte bpmSetting;
 
-
-
     private ArrayList<Byte> serialData;
 
 
@@ -371,10 +369,6 @@ public class Note {
 
     public int getPinWheelParts() {
         return pinWheelParts;
-    }
-
-    public void getPinWheelParameters() {
-
     }
 
     public void setPinWheelParts(int pinWheelParts) {

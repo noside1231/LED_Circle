@@ -30,7 +30,7 @@ public class Preset extends HBox{
         getChildren().addAll(presetEnabled, presetParameters);
     }
 
-    public void addRadioGroup(String... options) {
+    public void addRadioGroup(String name, String... options) {
         RadioGroup r = new RadioGroup(options);
         r.valueProperty().addListener(event -> {
             System.out.println(r.valueProperty().getValue());
